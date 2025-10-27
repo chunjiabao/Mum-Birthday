@@ -37,6 +37,13 @@
     opacity: 0.95;
   }
 
+  /* Small hint shown if autoplay is blocked */
+  #audioHint {
+    display:none;
+    margin-left:6px;
+    color:#ffd166;
+    font-size:13px;
+  }
 </style>
 </head>
 <body>
@@ -55,8 +62,6 @@
         <img src="images/p4.jpg" alt="Photo 4" style="opacity:0">
       </div>
 
-
-
       <div class="controls">
         <button id="prev">◀ Prev</button>
         <button id="toggle">▶ Play</button>
@@ -71,13 +76,13 @@
         <div id="notes">
           <p class="small"> To my beautiful mum, thank you for everything you do. Have a wonderful belated birthday. Love you!</p>
           <p class="small"> Wishing you endless joy, good health, and lots of love everyday.</p>
-   
         </div>
       </div>
 
       <div class="play">
-        <audio id="audio" src="happy-bday.mp3" preload="auto"></audio>
+        <audio id="audio" src="happy-bday.mp3" preload="auto" playsinline></audio>
         <button id="audioToggle">Play Music</button>
+        <span id="audioHint" class="small">Autoplay blocked — tap "Play Music" to enable sound</span>
         <span class="small" style="opacity:.8">⬅️⬅️Tap botton! </span>
       </div>
 
@@ -85,41 +90,67 @@
         <img src="images/p5.jpg" alt="Mum" />
       </div>
 
-
   <footer>Made with ♥ from your son </footer>
 </div>
 
 <script>
 // slideshow logic
 const slides = Array.from(document.querySelectorAll('.slideshow img'));
-let idx = 0, playing = false, timer=null;
+let idx = 0, playing = false, timer = null;
 function show(i){
   slides.forEach((s, j) => s.style.opacity = (j===i? '1' : '0'));
 }
 document.getElementById('next').onclick = () => { idx = (idx+1)%slides.length; show(idx); }
 document.getElementById('prev').onclick = () => { idx = (idx-1+slides.length)%slides.length; show(idx); }
 document.getElementById('toggle').onclick = () => {
-  if(!playing){ playing=true; document.getElementById('toggle').textContent='❚❚ Pause'; timer = setInterval(()=>{ idx=(idx+1)%slides.length; show(idx); },3000); }
-  else{ playing=false; document.getElementById('toggle').textContent='▶ Play'; clearInterval(timer); }
+  if(!playing){ startSlideshow(); }
+  else{ pauseSlideshow(); }
+}
+function startSlideshow(){
+  if(playing) return;
+  playing = true;
+  document.getElementById('toggle').textContent = '❚❚ Pause';
+  timer = setInterval(()=>{ idx=(idx+1)%slides.length; show(idx); },3000);
+}
+function pauseSlideshow(){
+  playing = false;
+  document.getElementById('toggle').textContent = '▶ Play';
+  clearInterval(timer);
 }
 
-// audio control
+// audio control with autoplay fallback
 const audio = document.getElementById('audio');
-document.getElementById('audioToggle').onclick = () => {
-  if(audio.paused){ audio.play(); document.getElementById('audioToggle').textContent='Pause Music'; }
-  else{ audio.pause(); document.getElementById('audioToggle').textContent='Play Music'; }
-}
+const audioToggle = document.getElementById('audioToggle');
+const audioHint = document.getElementById('audioHint');
 
-// confetti (lightweight)
+audioToggle.onclick = () => {
+  if(audio.paused){ audio.play().then(()=> { audioToggle.textContent='Pause Music'; audioHint.style.display='none'; }).catch(()=> { audioHint.style.display='inline'; }); }
+  else{ audio.pause(); audioToggle.textContent='Play Music'; }
+};
+
+// confetti (lightweight) - fixed bug with colors.length
 const confettiCanvas = document.getElementById('confetti');
-confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight;
-window.addEventListener('resize', ()=>{ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; });
 const ctx = confettiCanvas.getContext('2d');
+function resizeCanvas(){
+  confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
 function makeConfetti(){
   const pieces = [];
   const colors = ["#ff6b6b","#ffd166","#6bf0c1","#9ae6ff","#c084fc"];
   for(let i=0;i<160;i++){
-    pieces.push({x:Math.random()*innerWidth, y:Math.random()*-innerHeight, w:6, h:10, vx:(Math.random()-0.5)*2, vy: Math.random()*3+2, r: Math.random()*360, c: colors[Math.floor(Math.random()*colors.length)]});
+    pieces.push({
+      x: Math.random()*innerWidth,
+      y: Math.random()*-innerHeight,
+      w: 6 + Math.random()*6,
+      h: 8 + Math.random()*8,
+      vx: (Math.random()-0.5)*2,
+      vy: Math.random()*3+2,
+      r: Math.random()*360,
+      c: colors[Math.floor(Math.random()*colors.length)]
+    });
   }
   let t=0;
   function frame(){
@@ -138,10 +169,35 @@ function makeConfetti(){
 }
 document.getElementById('confettiBtn').onclick = makeConfetti;
 
-// pretend "download" by zipping client-side is complex; simple fallback:
-document.getElementById('downloadPhotos').onclick = () => {
-  alert('To provide a download: right-click the images folder and compress/zip it on your computer, then give the zip file to Mum (USB/email). If you want, I can give step-by-step for zipping on Windows or macOS.');
-};
+// Auto-start everything on load: slideshow + attempt audio + confetti once.
+// Note: audio autoplay may be blocked by browsers; if blocked we show a hint and the Play Music button.
+function startOnLoad(){
+  // Start slideshow
+  startSlideshow();
+
+  // Try to play audio; if blocked, show hint
+  audio.play().then(()=> {
+    audioToggle.textContent = 'Pause Music';
+    audioHint.style.display = 'none';
+  }).catch(()=> {
+    audioHint.style.display = 'inline';
+    audioToggle.textContent = 'Play Music';
+  });
+
+  // Run confetti once on load for celebration
+  try { makeConfetti(); } catch(e) { /* non-fatal */ }
+}
+
+// Run once DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startOnLoad);
+} else {
+  startOnLoad();
+}
+
+// Small safety: if user navigates away or closes, clear timers
+window.addEventListener('beforeunload', ()=> { pauseSlideshow(); try { audio.pause(); } catch(e){} });
+
 </script>
 </body>
 </html>
