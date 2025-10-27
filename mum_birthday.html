@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Happy Birthday, Mum 🎉</title>
+<style>
+  :root{--bg:#0f1724;--card:#0b1220;--accent:#ff6b6b}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial;background:linear-gradient(135deg,#081226,#0b1220);color:#fff;display:flex;align-items:center;justify-content:center;height:100vh}
+  .wrap{width:95%;max-width:980px;background:rgba(255,255,255,0.03);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+  .hero{display:grid;grid-template-columns:1fr 420px;gap:20px;padding:28px}
+  .left{padding:18px}
+  h1{margin:6px 0 8px;font-size:32px;letter-spacing:0.2px}
+  p.lead{opacity:0.9}
+  .slideshow{position:relative;border-radius:10px;overflow:hidden;background:#111;height:360px;display:flex;align-items:center;justify-content:center}
+  .slideshow img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .9s ease;position:absolute;top:0;left:0}
+  .controls{display:flex;gap:8px;margin-top:12px}
+  button{background:var(--accent);border:0;padding:8px 12px;border-radius:8px;color:#fff;cursor:pointer}
+  .right{padding:18px;border-left:1px solid rgba(255,255,255,0.03);background:linear-gradient(180deg,transparent,rgba(255,255,255,0.01))}
+  .message{background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;min-height:220px}
+  .play{display:flex;gap:8px;align-items:center;margin-top:12px}
+  footer{padding:10px 18px;text-align:center;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);font-size:13px}
+  .small{font-size:13px;opacity:0.9}
+  /* Confetti canvas */
+  #confetti{position:fixed;pointer-events:none;inset:0;z-index:999}
+
+  .photo-box {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .photo-box img {
+    width: 100%;
+    max-width: 480px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    opacity: 0.95;
+  }
+
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap" role="main">
+  <div class="hero">
+    <div class="left">
+      <h1>Happy Birthday, Mum! 🎂</h1>
+      <p class="lead">To my queen — may your day be as wonderful as your heart. Hehehe happy belated birthday🎉🎁 Click play to enjoy the slideshow.</p>
+
+      <div class="slideshow" id="slideshow">
+        <!-- Put your images into a folder named "images" next to this file and list them below -->
+        <img src="images/p1.jpg" alt="Photo 1" style="opacity:1">
+        <img src="images/p2.jpg" alt="Photo 2" style="opacity:0">
+        <img src="images/p3.jpg" alt="Photo 3" style="opacity:0">
+        <img src="images/p4.jpg" alt="Photo 4" style="opacity:0">
+      </div>
+
+
+
+      <div class="controls">
+        <button id="prev">◀ Prev</button>
+        <button id="toggle">▶ Play</button>
+        <button id="next">Next ▶</button>
+        <button id="confettiBtn">Celebrate 🎉</button>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="message">
+        <h3>❤️Messages from your son❤️</h3>
+        <div id="notes">
+          <p class="small"> To my beautiful mum, thank you for everything you do. Have a wonderful belated birthday. Love you!</p>
+          <p class="small"> Wishing you endless joy, good health, and lots of love everyday.</p>
+   
+        </div>
+      </div>
+
+      <div class="play">
+        <audio id="audio" src="happy-bday.mp3" preload="auto"></audio>
+        <button id="audioToggle">Play Music</button>
+        <span class="small" style="opacity:.8">⬅️⬅️Tap botton! </span>
+      </div>
+
+      <div class="photo-box">
+        <img src="images/p5.jpg" alt="Mum" />
+      </div>
+
+
+  <footer>Made with ♥ from your son </footer>
+</div>
+
+<script>
+// slideshow logic
+const slides = Array.from(document.querySelectorAll('.slideshow img'));
+let idx = 0, playing = false, timer=null;
+function show(i){
+  slides.forEach((s, j) => s.style.opacity = (j===i? '1' : '0'));
+}
+document.getElementById('next').onclick = () => { idx = (idx+1)%slides.length; show(idx); }
+document.getElementById('prev').onclick = () => { idx = (idx-1+slides.length)%slides.length; show(idx); }
+document.getElementById('toggle').onclick = () => {
+  if(!playing){ playing=true; document.getElementById('toggle').textContent='❚❚ Pause'; timer = setInterval(()=>{ idx=(idx+1)%slides.length; show(idx); },3000); }
+  else{ playing=false; document.getElementById('toggle').textContent='▶ Play'; clearInterval(timer); }
+}
+
+// audio control
+const audio = document.getElementById('audio');
+document.getElementById('audioToggle').onclick = () => {
+  if(audio.paused){ audio.play(); document.getElementById('audioToggle').textContent='Pause Music'; }
+  else{ audio.pause(); document.getElementById('audioToggle').textContent='Play Music'; }
+}
+
+// confetti (lightweight)
+const confettiCanvas = document.getElementById('confetti');
+confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight;
+window.addEventListener('resize', ()=>{ confettiCanvas.width = innerWidth; confettiCanvas.height = innerHeight; });
+const ctx = confettiCanvas.getContext('2d');
+function makeConfetti(){
+  const pieces = [];
+  const colors = ["#ff6b6b","#ffd166","#6bf0c1","#9ae6ff","#c084fc"];
+  for(let i=0;i<160;i++){
+    pieces.push({x:Math.random()*innerWidth, y:Math.random()*-innerHeight, w:6, h:10, vx:(Math.random()-0.5)*2, vy: Math.random()*3+2, r: Math.random()*360, c: colors[Math.floor(Math.random()*colors.length)]});
+  }
+  let t=0;
+  function frame(){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    for(const p of pieces){
+      p.x += p.vx; p.y += p.vy; p.r += 8;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r*Math.PI/180);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+      if(p.y > innerHeight + 40){ p.y = -50; p.x = Math.random()*innerWidth; }
+    }
+    t++;
+    if(t<450) requestAnimationFrame(frame); else ctx.clearRect(0,0,innerWidth,innerHeight);
+  }
+  frame();
+}
+document.getElementById('confettiBtn').onclick = makeConfetti;
+
+// pretend "download" by zipping client-side is complex; simple fallback:
+document.getElementById('downloadPhotos').onclick = () => {
+  alert('To provide a download: right-click the images folder and compress/zip it on your computer, then give the zip file to Mum (USB/email). If you want, I can give step-by-step for zipping on Windows or macOS.');
+};
+</script>
+</body>
+</html>
